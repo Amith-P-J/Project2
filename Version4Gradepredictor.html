@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SRM Grade Predictor</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      min-height: 100vh;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      max-width: 900px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #ff5f6d;
+    }
+
+    .subject {
+      background-color: #fff7f0;
+      border: 2px solid #fcb69f;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    label, select, input {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 2px solid #fcb69f;
+      border-radius: 10px;
+    }
+
+    .result {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .red {
+      color: red;
+    }
+
+    .grade-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .grade-option {
+      padding: 10px 15px;
+      border: 2px solid #fcb69f;
+      border-radius: 10px;
+      background-color: #fff;
+      cursor: pointer;
+    }
+
+    .grade-option.selected {
+      background-color: #fcb69f;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SRM Grade Predictor</h1>
+    <div id="subjects"></div>
+    <button onclick="addSubject()">+ Add Another Subject</button>
+  </div>
+
+  <script>
+    let subjectCount = 0;
+    const subjectsDiv = document.getElementById("subjects");
+    const gradeThresholds = {
+      "O": 91,
+      "A+": 81,
+      "A": 71,
+      "B+": 61,
+      "B": 56,
+      "C": 50
+    };
+
+    function addSubject() {
+      const id = `subject-${subjectCount}`;
+      const div = document.createElement("div");
+      div.className = "subject";
+      div.innerHTML = `
+        <label>Subject Name</label>
+        <input type="text" id="${id}-name" placeholder="e.g. Maths" />
+
+        <label>Internal Marks Type</label>
+        <select id="${id}-internalType" onchange="toggleCustom('${id}'); updateGrade('${id}');">
+          <option value="60">Out of 60</option>
+          <option value="custom">Custom</option>
+        </select>
+
+        <div id="${id}-customInputs" style="display: none;">
+          <label>Marks obtained so far</label>
+          <input type="number" id="${id}-current" placeholder="e.g. 20" oninput="updateGrade('${id}')" />
+
+          <label>Total internal marks so far</label>
+          <input type="number" id="${id}-total" placeholder="e.g. 35" oninput="updateGrade('${id}')" />
+
+          <label>Predicted marks in remaining internals</label>
+          <input type="number" id="${id}-predicted" placeholder="e.g. 10" oninput="updateGrade('${id}')" />
+        </div>
+
+        <div id="${id}-fullInputs">
+          <label>Enter Internal Marks (if known out of 60)</label>
+          <input type="number" id="${id}-internalFull" placeholder="e.g. 48" oninput="updateGrade('${id}')" />
+        </div>
+
+        <label>Semester Exam Marks (out of 70)</label>
+        <input type="number" id="${id}-semester" placeholder="e.g. 52" oninput="updateGrade('${id}')" />
+
+        <label>Select Target Grade</label>
+        <div class="grade-options" id="${id}-gradeOptions">
+          ${Object.entries(gradeThresholds).map(([grade, value]) => `<div class="grade-option" onclick="selectGrade('${id}', '${grade}')">${grade}</div>`).join('')}
+        </div>
+
+        <div class="result" id="${id}-result"></div>
+      `;
+      subjectsDiv.appendChild(div);
+      subjectCount++;
+      selectGrade(id, "O");
+    }
+
+    function toggleCustom(id) {
+      const type = document.getElementById(`${id}-internalType`).value;
+      document.getElementById(`${id}-customInputs`).style.display = type === 'custom' ? 'block' : 'none';
+      document.getElementById(`${id}-fullInputs`).style.display = type === 'custom' ? 'none' : 'block';
+    }
+
+    function selectGrade(id, grade) {
+      const options = document.querySelectorAll(`#${id}-gradeOptions .grade-option`);
+      options.forEach(opt => opt.classList.remove("selected"));
+      const selected = Array.from(options).find(opt => opt.textContent === grade);
+      if (selected) selected.classList.add("selected");
+      document.getElementById(`${id}-gradeOptions`).dataset.selected = grade;
+      updateGrade(id);
+    }
+
+    function updateGrade(id) {
+      const internalType = document.getElementById(`${id}-internalType`).value;
+      let internalOutOf60 = 0;
+
+      if (internalType === "custom") {
+        const current = parseFloat(document.getElementById(`${id}-current`).value);
+        const total = parseFloat(document.getElementById(`${id}-total`).value);
+        const predicted = parseFloat(document.getElementById(`${id}-predicted`).value);
+        if (!isNaN(current) && !isNaN(total) && !isNaN(predicted) && total <= 60) {
+          internalOutOf60 = current + predicted;
+        } else {
+          document.getElementById(`${id}-result`).textContent = "Please enter valid custom internal inputs.";
+          return;
+        }
+      } else {
+        internalOutOf60 = parseFloat(document.getElementById(`${id}-internalFull`).value);
+        if (isNaN(internalOutOf60)) {
+          document.getElementById(`${id}-result`).textContent = "Enter valid internal marks out of 60.";
+          return;
+        }
+      }
+
+      const semMarks = parseFloat(document.getElementById(`${id}-semester`).value);
+      const semOutOf40 = !isNaN(semMarks) ? (semMarks / 70) * 40 : 0;
+      const totalMarks = internalOutOf60 + semOutOf40;
+
+      let grade = "F";
+      if (totalMarks >= 91) grade = "O";
+      else if (totalMarks >= 81) grade = "A+";
+      else if (totalMarks >= 71) grade = "A";
+      else if (totalMarks >= 61) grade = "B+";
+      else if (totalMarks >= 56) grade = "B";
+      else if (totalMarks >= 50) grade = "C";
+
+      const targetGrade = document.getElementById(`${id}-gradeOptions`).dataset.selected || "O";
+      const neededTotal = gradeThresholds[targetGrade];
+      const neededFromSemesterOutOf40 = neededTotal - internalOutOf60;
+      const neededFromSemesterOutOf70 = (neededFromSemesterOutOf40 / 40) * 70;
+      const colorClass = neededFromSemesterOutOf70 > 70 ? 'red' : '';
+
+      document.getElementById(`${id}-result`).innerHTML = `Total Now: ${totalMarks.toFixed(2)} → Grade: ${grade}<br><span class="${colorClass}">To get ${targetGrade}, you need ${neededFromSemesterOutOf70.toFixed(2)} / 70 in Semester Exam.</span>`;
+    }
+
+    for (let i = 0; i < 7; i++) addSubject();
+  </script>
+</body>
+</html>

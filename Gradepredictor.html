@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SRM Grade Predictor</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      width: 500px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #ff5f6d;
+    }
+
+    label, select, input {
+      display: block;
+      width: 100%;
+      margin-top: 15px;
+      font-size: 1rem;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 2px solid #fcb69f;
+      border-radius: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #ff5f6d;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e94e58;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SRM Grade Predictor</h1>
+
+    <label for="internalType">Internal Marks Type</label>
+    <select id="internalType">
+      <option value="60">Out of 60</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <div id="customInputs" style="display: none;">
+      <label for="currentInternal">Marks obtained so far</label>
+      <input type="number" id="currentInternal" placeholder="e.g. 20" />
+
+      <label for="customTotal">Total internal marks so far</label>
+      <input type="number" id="customTotal" placeholder="e.g. 35" />
+
+      <label for="predictedNext">Predicted marks in remaining internals</label>
+      <input type="number" id="predictedNext" placeholder="e.g. 10" />
+    </div>
+
+    <div id="fullInputs">
+      <label for="internalFull">Enter Internal Marks (if known out of 60)</label>
+      <input type="number" id="internalFull" placeholder="e.g. 48" />
+    </div>
+
+    <label for="semesterMarks">Semester Exam Marks (out of 70)</label>
+    <input type="number" id="semesterMarks" placeholder="e.g. 52" />
+
+    <button onclick="calculateGrade()">Calculate Grade</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const internalType = document.getElementById("internalType");
+    const customInputs = document.getElementById("customInputs");
+    const fullInputs = document.getElementById("fullInputs");
+
+    internalType.addEventListener("change", () => {
+      if (internalType.value === "custom") {
+        customInputs.style.display = "block";
+        fullInputs.style.display = "none";
+      } else {
+        customInputs.style.display = "none";
+        fullInputs.style.display = "block";
+      }
+    });
+
+    function calculateGrade() {
+      let internalOutOf60 = 0;
+      if (internalType.value === "custom") {
+        const current = parseFloat(document.getElementById("currentInternal").value);
+        const total = parseFloat(document.getElementById("customTotal").value);
+        const predicted = parseFloat(document.getElementById("predictedNext").value);
+
+        if (isNaN(current) || isNaN(total) || isNaN(predicted) || total >= 60) {
+          document.getElementById("result").textContent = "Please fill valid custom internal inputs.";
+          return;
+        }
+        const finalCustomTotal = total + (60 - total);
+        internalOutOf60 = ((current + predicted) / finalCustomTotal) * 60;
+      } else {
+        internalOutOf60 = parseFloat(document.getElementById("internalFull").value);
+        if (isNaN(internalOutOf60)) {
+          document.getElementById("result").textContent = "Enter internal marks out of 60.";
+          return;
+        }
+      }
+
+      const semMarks = parseFloat(document.getElementById("semesterMarks").value);
+      if (isNaN(semMarks)) {
+        document.getElementById("result").textContent = "Enter semester exam marks out of 70.";
+        return;
+      }
+
+      const semOutOf40 = (semMarks / 70) * 40;
+      const totalMarks = internalOutOf60 + semOutOf40;
+
+      let grade = "";
+      if (totalMarks >= 91) grade = "O";
+      else if (totalMarks >= 81) grade = "A+";
+      else if (totalMarks >= 71) grade = "A";
+      else if (totalMarks >= 61) grade = "B+";
+      else if (totalMarks >= 56) grade = "B";
+      else if (totalMarks >= 50) grade = "C";
+      else grade = "F";
+
+      document.getElementById("result").textContent = `Total: ${totalMarks.toFixed(2)} → Grade: ${grade}`;
+    }
+  </script>
+</body>
+</html>
